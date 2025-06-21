@@ -1,31 +1,33 @@
+import logging
 from flask import Flask, request
-from telegram import Bot, Update
-from telegram.ext import Dispatcher, CommandHandler
-import os
+from telegram import Update
+from telegram.ext import (
+    Application,
+    CommandHandler,
+    ContextTypes,
+)
 
-# --- ВСТАВЛЕН ТВОЙ ТОКЕН ---
+import asyncio
+
 TOKEN = "7901632898:AAFF5UShYE8-cEC71ABnJX9gC_zpClwBtZQ"
 
-bot = Bot(token=TOKEN)
 app = Flask(__name__)
+application = Application.builder().token(TOKEN).build()
 
-# --- Создаем диспетчер один раз ---
-dispatcher = Dispatcher(bot=bot, update_queue=None)
+# --- Команда /start ---
+async def start(update: Update, context: ContextTypes.DEFAULT_TYPE):
+    await update.message.reply_text("Привет! Это бот Usta KG. Чем могу помочь?")
 
-# --- Хендлер для команды /start ---
-def start(update: Update, context):
-    update.message.reply_text("Привет! Это бот Usta KG. Чем могу помочь?")
+application.add_handler(CommandHandler("start", start))
 
-dispatcher.add_handler(CommandHandler("start", start))
-
-# --- Webhook обработчик ---
+# --- Flask webhook ---
 @app.route("/", methods=["POST"])
 def webhook():
-    update = Update.de_json(request.get_json(force=True), bot)
-    dispatcher.process_update(update)
+    update = Update.de_json(request.get_json(force=True), application.bot)
+    asyncio.run(application.process_update(update))
     return "ok"
 
-# --- Проверка доступности ---
+# --- Проверка работы сайта ---
 @app.route("/", methods=["GET"])
 def index():
     return "Bot is running!"
